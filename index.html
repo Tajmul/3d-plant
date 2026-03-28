@@ -1,1 +1,635 @@
-<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>3D Plant Pot Designer</title>\n    <style>\n        body { margin: 0; }\n        canvas { display: block; }\n    </style>\n    <script src="https://threejs.org/build/three.js"></script>\n</head>\n<body>\n    <script>\n        let scene, camera, renderer;\n        let pot;\n        let controls;\n        let material;\n        let shapes = { cylinder: createCylinder, cone: createCone, bulb: createBulb };\n\n        init();\n        animate();\n\n        function init() {\n            scene = new THREE.Scene();\n            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);\n            renderer = new THREE.WebGLRenderer();\n            renderer.setSize(window.innerWidth, window.innerHeight);\n            document.body.appendChild(renderer.domElement);\n\n            createControls();\n            createPot();\n            camera.position.z = 5;\n        }\n\n        function createControls() {\n            // Controls for customization (color, size, shapes, etc.)\n            // Add GUI from dat.GUI or similar library here\n        }\n\n        function createPot(shape = 'cylinder', materialType = 'ceramic') {\n            if (pot) { scene.remove(pot); }\n            material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });\n            pot = shapes[shape]();\n            pot.material = material;\n            scene.add(pot);\n        }\n\n        function createCylinder() {\n            const geometry = new THREE.CylinderGeometry(1, 1, 2, 32);\n            const cylinder = new THREE.Mesh(geometry, material);\n            return cylinder;\n        }\n\n        function createCone() {\n            const geometry = new THREE.ConeGeometry(1, 2, 32);\n            const cone = new THREE.Mesh(geometry, material);\n            return cone;\n        }\n\n        function createBulb() {\n            const geometry = new THREE.SphereGeometry(1, 32, 32);\n            const bulb = new THREE.Mesh(geometry, material);\n            return bulb;\n        }\n\n        function animate() {\n            requestAnimationFrame(animate);\n            renderer.render(scene, camera);\n        }\n\n        // Function to download the design\n        function downloadDesign() {\n            // Convert the pot design to an image or a file\n        }\n\n        window.addEventListener('resize', () => {\n            camera.aspect = window.innerWidth / window.innerHeight;\n            camera.updateProjectionMatrix();\n            renderer.setSize(window.innerWidth, window.innerHeight);\n        });\n    </script>\n</body>\n</html>\n
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Plant Pot Designer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+        }
+        
+        #canvas {
+            flex: 1;
+            display: block;
+        }
+        
+        .controls-panel {
+            width: 320px;
+            background: white;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .controls-panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .control-group input[type="color"],
+        .control-group input[type="range"],
+        .control-group select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .control-group input[type="color"] {
+            height: 40px;
+            cursor: pointer;
+        }
+        
+        .control-group input[type="range"] {
+            cursor: pointer;
+        }
+        
+        .control-group select {
+            cursor: pointer;
+            background-color: white;
+        }
+        
+        .range-value {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        #generateBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        #generateBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        #resetBtn {
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+        
+        #resetBtn:hover {
+            background: #e0e0e0;
+        }
+        
+        #downloadBtn {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        #downloadBtn:hover {
+            background: #45a049;
+        }
+        
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .preset-btn {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .preset-btn:hover {
+            border-color: #667eea;
+            background: #f5f5f5;
+        }
+        
+        .info-section {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="canvas"></canvas>
+        <div class="controls-panel">
+            <h2>🌱 Pot Designer</h2>
+            
+            <div class="control-group">
+                <label>Pot Color</label>
+                <input type="color" id="colorInput" value="#E8A76B">
+            </div>
+            
+            <div class="control-group">
+                <label>Size <span class="range-value" id="sizeValue">1.0x</span></label>
+                <input type="range" id="sizeInput" min="0.5" max="2" step="0.1" value="1">
+            </div>
+            
+            <div class="control-group">
+                <label>Height <span class="range-value" id="heightValue">1.0x</span></label>
+                <input type="range" id="heightInput" min="0.5" max="2" step="0.1" value="1">
+            </div>
+            
+            <div class="control-group">
+                <label>Width <span class="range-value" id="widthValue">1.0x</span></label>
+                <input type="range" id="widthInput" min="0.5" max="2" step="0.1" value="1">
+            </div>
+            
+            <div class="control-group">
+                <label>Material</label>
+                <select id="materialSelect">
+                    <option value="ceramic">Ceramic</option>
+                    <option value="plastic">Plastic</option>
+                    <option value="terracotta">Terracotta</option>
+                    <option value="metal">Metal</option>
+                    <option value="porcelain">Porcelain</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Shape</label>
+                <select id="shapeSelect">
+                    <option value="cylinder">Cylinder</option>
+                    <option value="cone">Cone</option>
+                    <option value="bulb">Bulb</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Pattern</label>
+                <select id="patternSelect">
+                    <option value="solid">Solid</option>
+                    <option value="striped">Striped</option>
+                    <option value="polka-dot">Polka Dot</option>
+                    <option value="checkered">Checkered</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Roughness <span class="range-value" id="roughnessValue">0.5</span></label>
+                <input type="range" id="roughnessInput" min="0" max="1" step="0.1" value="0.5">
+            </div>
+            
+            <div class="button-group">
+                <button id="generateBtn">Generate</button>
+                <button id="resetBtn">Reset</button>
+            </div>
+            
+            <button id="downloadBtn" style="width: 100%; margin-top: 10px;">📥 Download Design</button>
+            
+            <div class="preset-buttons">
+                <button class="preset-btn" data-preset="classic">Classic Terracotta</button>
+                <button class="preset-btn" data-preset="modern">Modern Ceramic</button>
+                <button class="preset-btn" data-preset="sleek">Sleek Metal</button>
+                <button class="preset-btn" data-preset="colorful">Colorful Plastic</button>
+            </div>
+            
+            <div class="info-section">
+                <strong>💡 Tips:</strong><br>
+                • Use mouse to rotate the pot<br>
+                • Scroll to zoom in/out<br>
+                • Right-click to pan<br>
+                • Adjust all parameters in real-time
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Three.js Scene Setup
+        let scene, camera, renderer, pot, light1, light2;
+        let controls = {
+            color: '#E8A76B',
+            size: 1,
+            height: 1,
+            width: 1,
+            material: 'ceramic',
+            shape: 'cylinder',
+            pattern: 'solid',
+            roughness: 0.5
+        };
+
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f0f0);
+            scene.fog = new THREE.Fog(0xf0f0f0, 100, 150);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 2, 5);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer
+            const canvas = document.getElementById('canvas');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth - 320, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+
+            // Lighting
+            light1 = new THREE.DirectionalLight(0xffffff, 1);
+            light1.position.set(5, 10, 7);
+            light1.shadow.mapSize.width = 2048;
+            light1.shadow.mapSize.height = 2048;
+            light1.castShadow = true;
+            scene.add(light1);
+
+            light2 = new THREE.PointLight(0xffffff, 0.5);
+            light2.position.set(-5, 5, 5);
+            scene.add(light2);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(20, 20);
+            const groundMaterial = new THREE.MeshStandardMaterial({ color: 0xd0d0d0 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Mouse controls
+            setupMouseControls();
+
+            // Event listeners
+            document.getElementById('generateBtn').addEventListener('click', generatePot);
+            document.getElementById('resetBtn').addEventListener('click', resetControls);
+            document.getElementById('downloadBtn').addEventListener('click', downloadDesign);
+            
+            document.getElementById('colorInput').addEventListener('change', (e) => {
+                controls.color = e.target.value;
+                generatePot();
+            });
+            
+            document.getElementById('sizeInput').addEventListener('input', (e) => {
+                controls.size = parseFloat(e.target.value);
+                document.getElementById('sizeValue').textContent = controls.size.toFixed(1) + 'x';
+                generatePot();
+            });
+            
+            document.getElementById('heightInput').addEventListener('input', (e) => {
+                controls.height = parseFloat(e.target.value);
+                document.getElementById('heightValue').textContent = controls.height.toFixed(1) + 'x';
+                generatePot();
+            });
+            
+            document.getElementById('widthInput').addEventListener('input', (e) => {
+                controls.width = parseFloat(e.target.value);
+                document.getElementById('widthValue').textContent = controls.width.toFixed(1) + 'x';
+                generatePot();
+            });
+            
+            document.getElementById('materialSelect').addEventListener('change', (e) => {
+                controls.material = e.target.value;
+                generatePot();
+            });
+            
+            document.getElementById('shapeSelect').addEventListener('change', (e) => {
+                controls.shape = e.target.value;
+                generatePot();
+            });
+            
+            document.getElementById('patternSelect').addEventListener('change', (e) => {
+                controls.pattern = e.target.value;
+                generatePot();
+            });
+            
+            document.getElementById('roughnessInput').addEventListener('input', (e) => {
+                controls.roughness = parseFloat(e.target.value);
+                document.getElementById('roughnessValue').textContent = controls.roughness.toFixed(1);
+                generatePot();
+            });
+
+            // Preset buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    applyPreset(e.target.dataset.preset);
+                });
+            });
+
+            window.addEventListener('resize', onWindowResize);
+
+            // Initial pot generation
+            generatePot();
+            animate();
+        }
+
+        function setupMouseControls() {
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+
+            document.getElementById('canvas').addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            document.getElementById('canvas').addEventListener('mousemove', (e) => {
+                if (isDragging && pot) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+                    pot.rotation.y += deltaX * 0.01;
+                    pot.rotation.x += deltaY * 0.01;
+                }
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            document.getElementById('canvas').addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            document.getElementById('canvas').addEventListener('wheel', (e) => {
+                e.preventDefault();
+                camera.position.z += e.deltaY * 0.01;
+            });
+        }
+
+        function getMaterial() {
+            const color = new THREE.Color(controls.color);
+            let material;
+
+            switch (controls.material) {
+                case 'metal':
+                    material = new THREE.MeshStandardMaterial({
+                        color: color,
+                        metalness: 1,
+                        roughness: controls.roughness,
+                        envMapIntensity: 1
+                    });
+                    break;
+                case 'terracotta':
+                    material = new THREE.MeshStandardMaterial({
+                        color: color,
+                        metalness: 0,
+                        roughness: 0.8,
+                        map: createTextureForPattern()
+                    });
+                    break;
+                case 'plastic':
+                    material = new THREE.MeshStandardMaterial({
+                        color: color,
+                        metalness: 0.1,
+                        roughness: 0.3,
+                        map: createTextureForPattern()
+                    });
+                    break;
+                case 'ceramic':
+                    material = new THREE.MeshStandardMaterial({
+                        color: color,
+                        metalness: 0,
+                        roughness: 0.4,
+                        map: createTextureForPattern()
+                    });
+                    break;
+                case 'porcelain':
+                    material = new THREE.MeshStandardMaterial({
+                        color: color,
+                        metalness: 0,
+                        roughness: 0.1,
+                        map: createTextureForPattern()
+                    });
+                    break;
+                default:
+                    material = new THREE.MeshStandardMaterial({ color: color });
+            }
+
+            return material;
+        }
+
+        function createTextureForPattern() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 256, 256);
+
+            const color = controls.color;
+            
+            if (controls.pattern === 'striped') {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 10;
+                for (let i = 0; i < 256; i += 20) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, 256);
+                    ctx.stroke();
+                }
+            } else if (controls.pattern === 'polka-dot') {
+                ctx.fillStyle = color;
+                for (let i = 0; i < 256; i += 30) {
+                    for (let j = 0; j < 256; j += 30) {
+                        ctx.beginPath();
+                        ctx.arc(i + 15, j + 15, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            } else if (controls.pattern === 'checkered') {
+                ctx.fillStyle = color;
+                for (let i = 0; i < 256; i += 30) {
+                    for (let j = 0; j < 256; j += 30) {
+                        if ((i / 30 + j / 30) % 2 === 0) {
+                            ctx.fillRect(i, j, 30, 30);
+                        }
+                    }
+                }
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            return texture;
+        }
+
+        function generatePot() {
+            if (pot) {
+                scene.remove(pot);
+            }
+
+            const material = getMaterial();
+            let geometry;
+
+            const radiusTop = 1 * controls.size * controls.width;
+            const radiusBottom = 1.1 * controls.size * controls.width;
+            const height = 1.5 * controls.size * controls.height;
+
+            switch (controls.shape) {
+                case 'cone':
+                    geometry = new THREE.ConeGeometry(radiusTop, height, 32);
+                    break;
+                case 'bulb':
+                    geometry = new THREE.SphereGeometry(radiusTop, 32, 32);
+                    geometry.scale(1, 0.8, 1);
+                    break;
+                case 'cylinder':
+                default:
+                    geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, 32);
+            }
+
+            pot = new THREE.Mesh(geometry, material);
+            pot.castShadow = true;
+            pot.receiveShadow = true;
+            scene.add(pot);
+        }
+
+        function resetControls() {
+            controls = {
+                color: '#E8A76B',
+                size: 1,
+                height: 1,
+                width: 1,
+                material: 'ceramic',
+                shape: 'cylinder',
+                pattern: 'solid',
+                roughness: 0.5
+            };
+
+            document.getElementById('colorInput').value = controls.color;
+            document.getElementById('sizeInput').value = controls.size;
+            document.getElementById('heightInput').value = controls.height;
+            document.getElementById('widthInput').value = controls.width;
+            document.getElementById('materialSelect').value = controls.material;
+            document.getElementById('shapeSelect').value = controls.shape;
+            document.getElementById('patternSelect').value = controls.pattern;
+            document.getElementById('roughnessInput').value = controls.roughness;
+
+            document.getElementById('sizeValue').textContent = '1.0x';
+            document.getElementById('heightValue').textContent = '1.0x';
+            document.getElementById('widthValue').textContent = '1.0x';
+            document.getElementById('roughnessValue').textContent = '0.5';
+
+            generatePot();
+        }
+
+        function applyPreset(preset) {
+            switch (preset) {
+                case 'classic':
+                    controls.color = '#A0653D';
+                    controls.material = 'terracotta';
+                    controls.pattern = 'solid';
+                    controls.roughness = 0.8;
+                    break;
+                case 'modern':
+                    controls.color = '#E8E8E8';
+                    controls.material = 'ceramic';
+                    controls.pattern = 'solid';
+                    controls.roughness = 0.4;
+                    break;
+                case 'sleek':
+                    controls.color = '#333333';
+                    controls.material = 'metal';
+                    controls.pattern = 'solid';
+                    controls.roughness = 0.3;
+                    break;
+                case 'colorful':
+                    controls.color = '#FF6B9D';
+                    controls.material = 'plastic';
+                    controls.pattern = 'checkered';
+                    controls.roughness = 0.5;
+                    break;
+            }
+
+            document.getElementById('colorInput').value = controls.color;
+            document.getElementById('materialSelect').value = controls.material;
+            document.getElementById('patternSelect').value = controls.pattern;
+            document.getElementById('roughnessInput').value = controls.roughness;
+            document.getElementById('roughnessValue').textContent = controls.roughness.toFixed(1);
+
+            generatePot();
+        }
+
+        function downloadDesign() {
+            const designData = {
+                timestamp: new Date().toISOString(),
+                design: controls
+            };
+
+            const dataStr = JSON.stringify(designData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `plant-pot-design-${Date.now()}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function onWindowResize() {
+            const width = window.innerWidth - 320;
+            const height = window.innerHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
